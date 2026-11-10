@@ -1,0 +1,21 @@
+# 构建产物:clone 后跑 `node build.mjs` 生成
+lib/
+
+# 本地安装 / 依赖
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+*.tgz
+
+# 本地预览 / 日志 / OS
+preview*.html
+*.log
+.DS_Store
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key

@@ -1,0 +1,4 @@
+# 视频总结 · 宿主插件行(bundle patch,由 dsh.profile.bundles 自动应用)
+- insert:
+    - id: video-summary
+      name: '@lim324/dsh-video-summary'

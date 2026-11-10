@@ -1,0 +1,68 @@
+{
+  "name": "@lim324/dsh-video-summary",
+  "version": "0.1.1",
+  "description": "视频总结:侧边栏入口 + 主面板,把一个视频链接变成带时间轴的总结记录(yt-dlp 取音频/字幕、faster-whisper 本地转录、模型写总结)",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "meta": {
+      "title": "视频总结",
+      "description": "粘贴视频链接即可转录并总结,每次总结都留在面板里"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": ">=0.2.1-rc.1 <0.3.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "video",
+    "transcript",
+    "summary",
+    "bilibili"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Limsanity/dsh-video-summary.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Limsanity/dsh-video-summary/issues"
+  },
+  "homepage": "https://github.com/Limsanity/dsh-video-summary#readme"
+}
