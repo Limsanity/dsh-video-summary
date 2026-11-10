@@ -33,31 +33,34 @@ function StatusBadge({ status, stage, statusText }) {
   )
 }
 
-function HealthBar({ health, onRetry }) {
+/**
+ * 环境状态:挤在筛选 tab 那一行的右侧。
+ * 之前它单独占一行、又比列表晚 1~2 秒才到,加载完成时把列表整体往下推 —— 典型的 CLS。
+ * 塞进固定 32px 高的 tabs 行里,变长变短都只影响这一行,不再动列表。
+ */
+function HealthStatus({ health, onRetry }) {
   if (!health) return null
+  const backend = health.probe?.asr
+  const modelName = String(backend?.model?.label ?? '')
+    .split('/')
+    .pop()
+    .replace(/^whisper-/, '')
+  const detail = [
+    `yt-dlp: ${health.probe?.ytDlp?.path ?? '未找到'}${health.probe?.ytDlp?.version ? ` (${health.probe.ytDlp.version})` : ''}`,
+    `ffmpeg: ${health.probe?.ffmpeg?.path ?? '未找到'}`,
+    `转录后端: ${backend ? `${backend.backend}(${backend.python})` : '无'}`,
+    `模型: ${backend?.model?.path ?? '无'}`,
+    `数据目录: ${health.dataDir ?? ''}`,
+  ].join('\n')
+
   if (health.probe?.ready) {
-    const backend = health.probe.asr
-    const modelName = String(backend?.model?.label ?? '')
-      .split('/')
-      .pop()
-      .replace(/^whisper-/, '')
-    const bits = [
-      '环境就绪',
-      health.probe.ytDlp?.version ? `yt-dlp ${health.probe.ytDlp.version}` : '',
-      backend ? `${backend.backend === 'mlx' ? 'MLX(GPU)' : 'CPU'} · ${modelName}` : '',
-    ].filter(Boolean)
-    const detail = [
-      `yt-dlp: ${health.probe.ytDlp?.path ?? '未找到'}`,
-      `ffmpeg: ${health.probe.ffmpeg?.path ?? '未找到'}`,
-      `转录后端: ${backend ? `${backend.backend}(${backend.python})` : '无'}`,
-      `模型: ${backend?.model?.path ?? '无'}`,
-      `数据目录: ${health.dataDir ?? ''}`,
-    ].join('\n')
     return (
-      <div className="vs-health" title={detail}>
-        <span className="vs-dot" title={detail} />
-        {bits.join(' · ')}
-      </div>
+      <span className="vs-health" title={detail}>
+        <span className="vs-dot" />
+        <span className="vs-health-text">
+          就绪 · {backend.backend === 'mlx' ? 'MLX(GPU)' : 'CPU'} · {modelName}
+        </span>
+      </span>
     )
   }
   const missing = [
@@ -65,12 +68,13 @@ function HealthBar({ health, onRetry }) {
     !health.probe?.asr ? 'mlx-whisper / faster-whisper' : '',
   ].filter(Boolean)
   return (
-    <div className="vs-warn">
-      <span>环境没准备好:缺 {missing.join(' / ') || '依赖'},转录会失败。</span>
+    <span className="vs-health vs-health-bad" title={detail}>
+      <span className="vs-dot vs-dot-bad" />
+      <span className="vs-health-text">环境缺 {missing.join(' / ') || '依赖'},转录会失败</span>
       <button type="button" className="vs-link-btn" onClick={onRetry}>
         重新探测
       </button>
-    </div>
+    </span>
   )
 }
 
@@ -268,9 +272,8 @@ export function VideoPanel({ startSummary, openExternal, openSession }) {
                 <em>{counts[tab.key] ?? 0}</em>
               </button>
             ))}
+            <HealthStatus health={health} onRetry={loadHealth} />
           </div>
-
-          <HealthBar health={health} onRetry={loadHealth} />
 
           <div className="vs-list">
             {loading && items.length === 0 ? <div className="vs-empty">加载中…</div> : null}
@@ -572,16 +575,21 @@ const STYLES = `
 .vs-btn.vs-danger{border-color:var(--dsw-alias-border-l1)}
 .vs-compose{flex:none;display:flex;gap:8px;padding:0 max(24px,calc((100% - 1040px)/2)) 12px}
 .vs-compose-input{flex:1;height:34px;font-size:13px}
-.vs-tabs{flex:none;display:flex;gap:2px;padding:0 max(24px,calc((100% - 1040px)/2));
+.vs-tabs{flex:none;display:flex;align-items:center;gap:2px;padding:0 max(24px,calc((100% - 1040px)/2));
   border-bottom:1px solid var(--dsw-alias-border-l1)}
-.vs-tab{height:32px;padding:0 10px;border:0;background:transparent;color:var(--dsw-alias-label-tertiary);
+.vs-tab{flex:none;height:32px;padding:0 10px;border:0;background:transparent;color:var(--dsw-alias-label-tertiary);
   font-size:12.5px;cursor:pointer;border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:5px}
 .vs-tab em{font-style:normal;font-size:11px;color:var(--dsw-alias-label-caption)}
 .vs-tab:hover{color:var(--dsw-alias-label-primary)}
 .vs-tab.is-active{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-brand-primary)}
-.vs-health,.vs-warn{flex:none;display:flex;align-items:center;gap:6px;font-size:11.5px;
-  padding:6px max(24px,calc((100% - 1040px)/2));color:var(--dsw-alias-label-caption)}
-.vs-warn{color:var(--dsw-alias-state-error-primary);justify-content:space-between}
+.vs-health{margin-left:auto;flex:0 1 auto;min-width:0;display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;color:var(--dsw-alias-label-caption);padding-left:14px;white-space:nowrap}
+.vs-health-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.vs-health-bad{color:var(--dsw-alias-state-error-primary)}
+.vs-dot-bad{background:var(--dsw-alias-state-error-primary);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-state-error-primary) 18%,transparent)}
+.vs-warn{flex:none;display:flex;align-items:center;gap:6px;font-size:11.5px;margin:10px 0;
+  color:var(--dsw-alias-state-error-primary);justify-content:flex-start}
 .vs-dot{width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary);
   box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-state-business-primary) 18%,transparent)}
 .vs-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
